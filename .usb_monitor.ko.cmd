@@ -1,0 +1,1 @@
+savedcmd_/home/cselab3/usb_lkm_project/usb_monitor.ko := ld -r -m elf_x86_64 -z noexecstack --build-id=sha1  -T scripts/module.lds -o /home/cselab3/usb_lkm_project/usb_monitor.ko /home/cselab3/usb_lkm_project/usb_monitor.o /home/cselab3/usb_lkm_project/usb_monitor.mod.o
