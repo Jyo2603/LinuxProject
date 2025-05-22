@@ -27,18 +27,21 @@ static int usb_notify(struct notifier_block *nb, unsigned long action, void *dat
             snprintf(last_product, sizeof(last_product), "0x%04x", le16_to_cpu(udev->descriptor.idProduct));
             snprintf(last_power_path, sizeof(last_power_path), "/sys/bus/usb/devices/%s/power/control", udev->dev.kobj.name);
 
-            last_max_power = udev->descriptor.bMaxPower * 2; // convert from 2mA units to mA
+            // Default values
+            last_max_power = -1;
+            strncpy(last_type, "Unknown", sizeof(last_type));
 
-            // Try to detect device type (mass storage)
+            // Extract info from interface descriptor
             if (udev->actconfig && udev->actconfig->interface[0]) {
                 struct usb_interface_descriptor desc = udev->actconfig->interface[0]->altsetting[0].desc;
+
+                last_max_power = desc.bMaxPower * 2;
+
                 if (desc.bInterfaceClass == USB_CLASS_MASS_STORAGE) {
                     strncpy(last_type, "Mass Storage", sizeof(last_type));
                 } else {
                     strncpy(last_type, "Non-Storage", sizeof(last_type));
                 }
-            } else {
-                strncpy(last_type, "Unknown", sizeof(last_type));
             }
 
             printk(KERN_INFO "[USB_MON] USB plugged in: Vendor=0x%04x, Product=0x%04x, Power=%dmA",
@@ -86,7 +89,7 @@ static struct notifier_block usb_nb = {
 static int __init usb_init(void) {
     usb_register_notify(&usb_nb);
     proc_create("usb_monitor", 0, NULL, &proc_fops);
-    printk(KERN_INFO "[USB_MON] USB Monitor module loaded with enhanced /proc output.");
+    printk(KERN_INFO "[USB_MON] USB Monitor module loaded with /proc support.");
     return 0;
 }
 
@@ -101,4 +104,4 @@ module_exit(usb_exit);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Jyotsna P");
-MODULE_DESCRIPTION("Enhanced USB Monitor with power stats and storage detection");
+MODULE_DESCRIPTION("USB Monitor with power stats and device detection");
