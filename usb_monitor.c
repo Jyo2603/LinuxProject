@@ -12,7 +12,6 @@ static int unplug_count = 0;
 static char last_vendor[16] = "None";
 static char last_product[16] = "None";
 static char last_power_path[128] = "N/A";
-static int last_max_power = -1;
 static char last_type[32] = "Unknown";
 
 // USB event handler
@@ -27,16 +26,12 @@ static int usb_notify(struct notifier_block *nb, unsigned long action, void *dat
             snprintf(last_product, sizeof(last_product), "0x%04x", le16_to_cpu(udev->descriptor.idProduct));
             snprintf(last_power_path, sizeof(last_power_path), "/sys/bus/usb/devices/%s/power/control", udev->dev.kobj.name);
 
-            // Default values
-            last_max_power = -1;
+            // Default type
             strncpy(last_type, "Unknown", sizeof(last_type));
 
-            // Extract info from interface descriptor
+            // Check for mass storage class
             if (udev->actconfig && udev->actconfig->interface[0]) {
                 struct usb_interface_descriptor desc = udev->actconfig->interface[0]->altsetting[0].desc;
-
-                last_max_power = desc.bMaxPower * 2;
-
                 if (desc.bInterfaceClass == USB_CLASS_MASS_STORAGE) {
                     strncpy(last_type, "Mass Storage", sizeof(last_type));
                 } else {
@@ -44,10 +39,9 @@ static int usb_notify(struct notifier_block *nb, unsigned long action, void *dat
                 }
             }
 
-            printk(KERN_INFO "[USB_MON] USB plugged in: Vendor=0x%04x, Product=0x%04x, Power=%dmA",
+            printk(KERN_INFO "[USB_MON] USB plugged in: Vendor=0x%04x, Product=0x%04x",
                    le16_to_cpu(udev->descriptor.idVendor),
-                   le16_to_cpu(udev->descriptor.idProduct),
-                   last_max_power);
+                   le16_to_cpu(udev->descriptor.idProduct));
             break;
 
         case USB_DEVICE_REMOVE:
@@ -67,7 +61,6 @@ static int show_usb_info(struct seq_file *m, void *v) {
     seq_printf(m, "Last Vendor ID   : %s\n", last_vendor);
     seq_printf(m, "Last Product ID  : %s\n", last_product);
     seq_printf(m, "Device Type      : %s\n", last_type);
-    seq_printf(m, "Device Max Power : %dmA\n", last_max_power);
     seq_printf(m, "Power Control at : %s\n", last_power_path);
     return 0;
 }
@@ -89,7 +82,7 @@ static struct notifier_block usb_nb = {
 static int __init usb_init(void) {
     usb_register_notify(&usb_nb);
     proc_create("usb_monitor", 0, NULL, &proc_fops);
-    printk(KERN_INFO "[USB_MON] USB Monitor module loaded with /proc support.");
+    printk(KERN_INFO "[USB_MON] USB Monitor module loaded.");
     return 0;
 }
 
@@ -104,4 +97,4 @@ module_exit(usb_exit);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Jyotsna P");
-MODULE_DESCRIPTION("USB Monitor with power stats and device detection");
+MODULE_DESCRIPTION("USB Monitor with vendor/product info and type detection (safe version)");
