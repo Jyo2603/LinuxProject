@@ -26,10 +26,8 @@ static int usb_notify(struct notifier_block *nb, unsigned long action, void *dat
             snprintf(last_product, sizeof(last_product), "0x%04x", le16_to_cpu(udev->descriptor.idProduct));
             snprintf(last_power_path, sizeof(last_power_path), "/sys/bus/usb/devices/%s/power/control", udev->dev.kobj.name);
 
-            // Default type
+            // Detect device type
             strncpy(last_type, "Unknown", sizeof(last_type));
-
-            // Check for mass storage class
             if (udev->actconfig && udev->actconfig->interface[0]) {
                 struct usb_interface_descriptor desc = udev->actconfig->interface[0]->altsetting[0].desc;
                 if (desc.bInterfaceClass == USB_CLASS_MASS_STORAGE) {
@@ -53,7 +51,7 @@ static int usb_notify(struct notifier_block *nb, unsigned long action, void *dat
     return NOTIFY_OK;
 }
 
-// /proc interface
+// /proc interface display
 static int show_usb_info(struct seq_file *m, void *v) {
     seq_printf(m, "USB Monitor Stats:\n");
     seq_printf(m, "Plugged in count : %d\n", plug_count);
@@ -97,4 +95,4 @@ module_exit(usb_exit);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Jyotsna P");
-MODULE_DESCRIPTION("USB Monitor with vendor/product info and type detection (safe version)");
+MODULE_DESCRIPTION("USB Monitor (compatible with ARM64 kernel 6.8+, no bMaxPower)");
